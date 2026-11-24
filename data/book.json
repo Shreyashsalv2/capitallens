@@ -1,0 +1,15 @@
+{
+  "_note": "Illustrative FX and energy trading book. Linear notionals are USD exposure (positive = long the factor). Option quantity is in units of the underlying (barrels, MMBtu, currency units); strike_pct is the strike as a fraction of today's spot.",
+  "positions": [
+    {"id": "eur", "type": "linear", "factor": "EUR", "notional": 40000000, "desc": "long EUR/USD $40m"},
+    {"id": "gbp", "type": "linear", "factor": "GBP", "notional": -25000000, "desc": "short GBP/USD $25m"},
+    {"id": "aud", "type": "linear", "factor": "AUD", "notional": 30000000, "desc": "long AUD/USD $30m"},
+    {"id": "jpy", "type": "linear", "factor": "JPY", "notional": 15000000, "desc": "long JPY $15m"},
+    {"id": "inr", "type": "linear", "factor": "INR", "notional": -10000000, "desc": "short INR $10m"},
+    {"id": "cad", "type": "linear", "factor": "CAD", "notional": -20000000, "desc": "short CAD $20m"},
+    {"id": "brent", "type": "linear", "factor": "BRENT", "notional": 35000000, "desc": "long Brent futures $35m"},
+    {"id": "gas", "type": "linear", "factor": "HENRYHUB", "notional": -6000000, "desc": "short Henry Hub gas $6m"},
+    {"id": "brent_call", "type": "option", "factor": "BRENT", "option": "call", "quantity": 400000, "strike_pct": 1.10, "vol": 0.35, "expiry_years": 0.5, "desc": "long Brent 110% call (400k bbl)"},
+    {"id": "gas_put", "type": "option", "factor": "HENRYHUB", "option": "put", "quantity": -2000000, "strike_pct": 0.90, "vol": 0.60, "expiry_years": 0.25, "desc": "short Henry Hub 90% put (2m MMBtu)"}
+  ]
+}
