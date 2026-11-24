@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CapitalLens — Market-risk capital engine</title>
+<meta name="description" content="Historical-simulation VaR, Expected Shortfall, stressed VaR, Basel back-testing and Basel 2.5 market-risk capital for an FX and energy trading book, with what-if analysis for new trades.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%232a78d6'/%3E%3Cpath d='M14 46 L26 30 L36 38 L50 18' stroke='white' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><b>CapitalLens</b><span>Market-risk capital engine</span></div>
+    <nav class="links" aria-label="Links">
+      <a href="#whatif">What-if</a>
+      <a href="#method">Method</a>
+      <a href="/api/docs">API</a>
+      <a href="https://github.com/Shreyashsalv2/capitallens">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="intro">
+    <h1>How much capital does this FX &amp; energy book need, and why?</h1>
+    <p>CapitalLens replays more than 20 years of daily market moves through a trading book. It measures Value at Risk, Expected Shortfall and stressed VaR, back-tests the VaR model, and turns the results into a Basel 2.5 market-risk capital charge. Add a trade below to see how a new product or strategy changes the capital, with a plain-English explanation.</p>
+    <div class="asof" id="asof">Loading market data…</div>
+  </div>
+
+  <div id="app" class="loading">Running the risk engine…</div>
+
+  <div id="content" hidden>
+    <section class="card" aria-labelledby="h-summary">
+      <h2 id="h-summary">Today's risk and capital</h2>
+      <p class="sub">99% VaR and 97.5% Expected Shortfall over the last 250 trading days; 10-day figures use square-root-of-time scaling.</p>
+      <div class="tiles">
+        <div class="tile hero"><div class="label">Market-risk capital</div><div class="value" id="t-capital"></div><div class="note" id="t-rwa"></div></div>
+        <div class="tile"><div class="label">1-day VaR (99%)</div><div class="value" id="t-var"></div><div class="note" id="t-var10"></div></div>
+        <div class="tile"><div class="label">Expected Shortfall (97.5%)</div><div class="value" id="t-es"></div><div class="note" id="t-es10"></div></div>
+        <div class="tile"><div class="label">Stressed VaR (10-day)</div><div class="value" id="t-svar"></div><div class="note" id="t-stress"></div></div>
+        <div class="tile"><div class="label">Back-testing exceptions</div><div class="value" id="t-exc"></div><div class="note" id="t-exp"></div></div>
+        <div class="tile"><div class="label">Traffic-light zone</div><div class="value" id="t-zone"></div><div class="note" id="t-mult"></div></div>
+        <div class="tile"><div class="label">Positions</div><div class="value" id="t-pos"></div><div class="note">FX, crude oil, natural gas and options</div></div>
+      </div>
+      <h3 style="font-size:15px;margin:20px 0 0">In plain English</h3>
+      <ul class="explain" id="explain"></ul>
+    </section>
+
+    <section class="card" aria-labelledby="h-capital">
+      <h2 id="h-capital">Where the capital comes from</h2>
+      <p class="sub">Basel 2.5 internal-models charge: a VaR term plus a stressed-VaR term, each scaled by the back-testing multiplier.</p>
+      <div class="segbar" id="segbar" role="img"></div>
+      <div class="legend"><span><span class="key" style="background:var(--blue)"></span>VaR term</span><span><span class="key" style="background:var(--orange)"></span>Stressed-VaR term</span></div>
+      <div class="formula" id="formula"></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-bt">
+      <h2 id="h-bt">Back-testing: did the VaR model hold up?</h2>
+      <p class="sub">Each day's P&amp;L against the VaR forecast made the day before, using only data available then. A loss bigger than the forecast is an exception.</p>
+      <div class="stats" id="bt-stats"></div>
+      <div class="legend" style="margin-bottom:8px"><span><span class="key" style="background:var(--neutral-bar)"></span>Daily P&amp;L</span><span><span class="key line" style="background:var(--blue)"></span>VaR forecast (shown as a loss)</span><span><span class="key" style="background:var(--critical)"></span>Exception ▲</span></div>
+      <div class="chart" id="bt-chart"></div>
+      <details><summary>Show exception days as a table</summary><div class="tablewrap"><table id="bt-table"><thead><tr><th>Date</th><th>P&amp;L</th><th>VaR forecast</th><th>Loss beyond VaR</th></tr></thead><tbody></tbody></table></div></details>
+    </section>
+
+    <div class="grid2">
+      <section class="card" aria-labelledby="h-drv">
+        <h2 id="h-drv">What drives the risk</h2>
+        <p class="sub" id="drv-sub">Each position's share of Expected Shortfall: its average P&amp;L on the book's worst days. The bars add up to the book's total.</p>
+        <div class="toggle" role="group" aria-label="Risk measure">
+          <button type="button" aria-pressed="true" data-m="es">Today (ES)</button>
+          <button type="button" aria-pressed="false" data-m="svar">Stress period (sVaR)</button>
+        </div>
+        <div class="legend" style="margin-bottom:10px"><span><span class="key" style="background:var(--red)"></span>Adds to losses</span><span><span class="key" style="background:var(--blue)"></span>Offsets losses (hedge)</span></div>
+        <div class="drivers" id="drivers"></div>
+      </section>
+      <section class="card" aria-labelledby="h-dist">
+        <h2 id="h-dist">Daily P&amp;L over the last 250 days</h2>
+        <p class="sub">How often the book made or lost each amount. VaR and ES sit in the left tail.</p>
+        <div class="legend" style="margin-bottom:8px"><span><span class="key" style="background:var(--blue)"></span>Days</span><span><span class="key" style="background:var(--red)"></span>Days worse than VaR</span></div>
+        <div class="chart" id="dist-chart"></div>
+      </section>
+    </div>
+
+    <section class="card" id="whatif" aria-labelledby="h-wi">
+      <h2 id="h-wi">What-if: add a trade or a new product</h2>
+      <p class="sub">The engine reprices the trade under every historical scenario, adds it to the book and recomputes VaR, ES, back-testing and capital. The stress period stays fixed, as a bank's approved stress period would.</p>
+      <div class="presets" id="presets" aria-label="Example trades"></div>
+      <form class="whatif" id="wi-form" novalidate>
+        <label>Instrument
+          <select id="wi-type"><option value="linear">Delta-one (spot, forward, future)</option><option value="option">European option</option></select>
+        </label>
+        <label>Risk factor <select id="wi-factor"></select></label>
+        <label>Direction <select id="wi-side"><option value="1">Buy / long</option><option value="-1">Sell / short</option></select></label>
+        <label class="lin">Size (USD millions) <input id="wi-notional" type="number" min="0.1" max="1000" step="0.1" value="20"></label>
+        <label class="opt" hidden>Call or put <select id="wi-option"><option value="call">Call</option><option value="put">Put</option></select></label>
+        <label class="opt" hidden><span id="wi-qty-label">Quantity (units)</span> <input id="wi-qty" type="number" min="1" step="any" value="500000"></label>
+        <label class="opt" hidden>Strike (% of spot) <input id="wi-strike" type="number" min="20" max="500" step="1" value="100"></label>
+        <label class="opt" hidden>Implied vol (%) <input id="wi-vol" type="number" min="1" max="300" step="1" value="35"></label>
+        <label class="opt" hidden>Expiry (months) <input id="wi-expiry" type="number" min="1" max="60" step="1" value="3"></label>
+        <div><button class="btn" id="wi-run" type="submit">Run what-if</button></div>
+      </form>
+      <div class="error" id="wi-error" role="alert"></div>
+      <div class="result" id="wi-result" hidden>
+        <ul class="explain" id="wi-explain"></ul>
+        <div class="tablewrap" style="margin-top:16px"><table id="wi-table"><thead><tr><th>Measure</th><th>Before</th><th>After</th><th>Change</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-book">
+      <h2 id="h-book">The book</h2>
+      <p class="sub">Exposure is dollar delta: the P&amp;L for a 100% move in the factor. Option premiums are marked with Black's formula.</p>
+      <div class="tablewrap"><table id="book"><thead><tr><th>Position</th><th>Risk factor</th><th>Exposure</th><th>Standalone 1-day VaR</th><th>ES contribution</th><th>sVaR contribution (1-day)</th></tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <section class="card notes" id="method" aria-labelledby="h-m">
+      <h2 id="h-m">Method and data</h2>
+      <ul id="method-list">
+        <li><b>Data:</b> daily FX rates from the US Federal Reserve (H.10, via FRED) and Brent and Henry Hub prices from the US EIA, as republished by datahub.io. Only dates with all eight prices are used.</li>
+        <li><b>Historical simulation:</b> today's book is revalued under each past day's relative price moves. Options are fully revalued, so their convexity is captured.</li>
+        <li><b>VaR</b> is the 3rd-worst of 250 daily P&amp;Ls (99%). <b>ES</b> averages the worst 2.5% (6.25 days). 10-day figures are 1-day &times; &radic;10.</li>
+        <li><b>Stressed VaR</b> uses the 250-day window in the data that gives this book its highest VaR.</li>
+        <li><b>Back-testing</b> compares each of the last 250 days with the VaR forecast from the 250 days before it, then applies the Basel traffic light (green 0–4 exceptions, amber 5–9, red 10+), the Kupiec coverage test and the Christoffersen independence test.</li>
+        <li><b>Capital</b> = max(VaR, m &times; 60-day average VaR) + max(sVaR, m &times; 60-day average sVaR), with m = 3 + the traffic-light plus factor. RWA = 12.5 &times; capital.</li>
+        <li><b>Simplifications:</b> zero interest rates, constant implied vol, spot prices as a proxy for futures, a static book (positions don't change over the 60 days). An educational model, not affiliated with any bank.</li>
+      </ul>
+    </section>
+  </div>
+</main>
+<footer class="wrap">Built by Shreyash Singh Salv · <a href="https://github.com/Shreyashsalv2/capitallens">Source on GitHub</a> · MIT licence</footer>
+<script src="app.js"></script>
+</body>
+</html>
